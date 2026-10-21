@@ -323,6 +323,47 @@ def pull_inbox(user_id: str, terminal_id: str, limit: int) -> List[Dict[str, Any
     return tasks
 
 
+TASK_CARD_FIELDS = ("title", "type", "status", "request_id", "created_at", "updated_at")
+"""列表卡片字段：summary/user_id/terminal_id 留给详情接口，列表不多吐一眼用不上的东西。"""
+
+LIST_LIMIT_DEFAULT = 50
+LIST_LIMIT_MAX = 200
+"""默认 50 上限 200：看板一屏够用，也挡住 ?limit=100000 把库拖垮。"""
+
+
+def _task_card(row: Dict[str, Any]) -> Dict[str, Any]:
+    """行转看板卡片，主键改叫 task_id 与响应体字段对齐。"""
+    card = {"task_id": row["id"]}
+    card.update({field: row[field] for field in TASK_CARD_FIELDS})
+    return card
+
+
+def list_tasks(cursor: Optional[str], limit: int) -> Dict[str, Any]:
+    """按 (created_at DESC, id DESC) 做键集分页而不是 offset：
+
+    全序里 id 兜住同秒并列，所以新任务插进来也不会让已翻过的页错位或漏条。
+    cursor 传最后一条的 id，任务已删/传乱码就回空页，不让看板吃 500。
+    """
+    size = int(limit) if limit else LIST_LIMIT_DEFAULT
+    size = max(1, min(size, LIST_LIMIT_MAX))
+    with connect() as conn:
+        params: List[Any] = []
+        where = ""
+        if cursor:
+            anchor = _task_row(conn, cursor)
+            if not anchor:
+                return {"items": [], "next_cursor": None}
+            where = " WHERE (created_at < ? OR (created_at = ? AND id < ?))"
+            params = [anchor["created_at"], anchor["created_at"], anchor["id"]]
+        rows = conn.execute(
+            "SELECT * FROM tasks" + where + " ORDER BY created_at DESC, id DESC LIMIT ?",
+            (*params, size + 1),
+        ).fetchall()
+    cards = [_task_card(dict(row)) for row in rows[:size]]
+    next_cursor = cards[-1]["task_id"] if len(rows) > size else None
+    return {"items": cards, "next_cursor": next_cursor}
+
+
 def log_audit(
     actor: str, action: str, target: str, status_code: Optional[int], detail: Optional[str] = None
 ) -> None:

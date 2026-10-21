@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from contracts.schema import API, ERROR_CODES, STEP_SCHEMA_REQUIRED
 
 from .. import store
@@ -113,3 +113,14 @@ def register_artifact(
     if replay:
         body["code"] = ERROR_CODES["IDEMPOTENT_REPLAY"]
     return body
+
+
+@router.get(API["tasks"])
+def list_tasks(
+    cursor: Optional[str] = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    session: Session = Depends(require_session),
+) -> dict:
+    """看板列表：游标跟着上一页最后一条的 task_id 走，前端原样带回即翻下一页。"""
+    page = store.list_tasks(cursor=cursor, limit=limit)
+    return {"items": page["items"], "count": len(page["items"]), "next_cursor": page["next_cursor"]}
