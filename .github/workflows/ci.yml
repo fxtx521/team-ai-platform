@@ -34,7 +34,11 @@ jobs:
         with:
           python-version: "3.11"
       - name: 安装依赖
-        run: pip install fastapi uvicorn aiosqlite
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq sqlite3
+          python -m venv server/.venv
+          server/.venv/bin/pip install fastapi uvicorn
+          # w2 冒烟用 sqlite3 CLI 断言落库；冒烟脚本用 $PY=server/.venv/bin/python，必须先建 venv
       - name: W1+W2 冒烟
         run: |
           bash tests/w1_smoke.sh
