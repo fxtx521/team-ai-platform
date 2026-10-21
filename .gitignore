@@ -1,0 +1,5 @@
+contracts/__pycache__/
+server/.venv/
+server/tap.db
+*.pyc
+.DS_Store
