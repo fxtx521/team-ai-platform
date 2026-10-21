@@ -11,7 +11,7 @@ from starlette.concurrency import run_in_threadpool
 from . import store
 from .auth import actor_of
 from .routers import auth as auth_router
-from .routers import heartbeat, inbox, tasks
+from .routers import heartbeat, inbox, model_route, skills, tasks
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("tap")
@@ -45,5 +45,5 @@ async def audit_all(request: Request, call_next: Callable) -> Response:
     return response
 
 
-for module in (auth_router, heartbeat, tasks, inbox):
+for module in (auth_router, heartbeat, tasks, inbox, skills, model_route):
     app.include_router(module.router, prefix=API_PREFIX)
