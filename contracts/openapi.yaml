@@ -38,6 +38,17 @@ paths:
       responses:
         "200": { description: OK }
   /tasks:
+    get:
+      summary: 任务列表（看板用；cursor 分页）
+      parameters:
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        "200": { description: OK }
     post:
       summary: 创建任务（服务端派活或员工自建；request_id 幂等）
       requestBody:
