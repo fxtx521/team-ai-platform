@@ -1,5 +1,13 @@
 contracts/__pycache__/
+**/__pycache__/
 server/.venv/
 server/tap.db
+server/tap.db-wal
+server/tap.db-shm
+server/tap_smoke.log
 *.pyc
+*.db
+*.db-wal
+*.db-shm
+*.log
 .DS_Store
