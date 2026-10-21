@@ -338,23 +338,29 @@ def _task_card(row: Dict[str, Any]) -> Dict[str, Any]:
     return card
 
 
-def list_tasks(cursor: Optional[str], limit: int) -> Dict[str, Any]:
+def list_tasks(cursor: Optional[str], limit: int, user_id: Optional[str] = None) -> Dict[str, Any]:
     """按 (created_at DESC, id DESC) 做键集分页而不是 offset：
 
     全序里 id 兜住同秒并列，所以新任务插进来也不会让已翻过的页错位或漏条。
     cursor 传最后一条的 id，任务已删/传乱码就回空页，不让看板吃 500。
+    user_id 过滤：普通员工只看自己的任务；None（管理端）看全员——
+    权限边界落在存储层，路由拿不到"漏过滤"的口子。
     """
     size = int(limit) if limit else LIST_LIMIT_DEFAULT
     size = max(1, min(size, LIST_LIMIT_MAX))
     with connect() as conn:
         params: List[Any] = []
-        where = ""
+        where_parts: List[str] = []
+        if user_id is not None:
+            where_parts.append("user_id = ?")
+            params.append(user_id)
         if cursor:
             anchor = _task_row(conn, cursor)
             if not anchor:
                 return {"items": [], "next_cursor": None}
-            where = " WHERE (created_at < ? OR (created_at = ? AND id < ?))"
-            params = [anchor["created_at"], anchor["created_at"], anchor["id"]]
+            where_parts.append("(created_at < ? OR (created_at = ? AND id < ?))")
+            params += [anchor["created_at"], anchor["created_at"], anchor["id"]]
+        where = (" WHERE " + " AND ".join(where_parts)) if where_parts else ""
         rows = conn.execute(
             "SELECT * FROM tasks" + where + " ORDER BY created_at DESC, id DESC LIMIT ?",
             (*params, size + 1),

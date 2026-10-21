@@ -121,6 +121,9 @@ def list_tasks(
     limit: int = Query(default=50, ge=1, le=200),
     session: Session = Depends(require_session),
 ) -> dict:
-    """看板列表：游标跟着上一页最后一条的 task_id 走，前端原样带回即翻下一页。"""
-    page = store.list_tasks(cursor=cursor, limit=limit)
+    """看板列表：游标跟着上一页最后一条的 task_id 走，前端原样带回即翻下一页。
+
+    权限边界在存储层：员工 token 只拉回自己的任务，不给路由层留"忘过滤"的口子。
+    """
+    page = store.list_tasks(cursor=cursor, limit=limit, user_id=session.user_id)
     return {"items": page["items"], "count": len(page["items"]), "next_cursor": page["next_cursor"]}
