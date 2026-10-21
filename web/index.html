@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>登录 · 团队 AI 工作台</title>
+<!-- 内联 CSS：整站零外链资源（内网/离线可用），配色对齐公司 PPT：深蓝底 + 青 + 金 -->
+<style>
+  :root {
+    /* 一套变量管全站，改色只改这里 */
+    --bg: #0D1A2A;
+    --panel: #132A42;
+    --panel-soft: #172F49;
+    --line: #1E3A55;
+    --primary: #00B4D8;
+    --primary-weak: rgba(0, 180, 216, 0.12);
+    --gold: #FFB703;
+    --text: #E6F1F8;
+    --text-dim: #8FA9BE;
+    --danger: #FF6B6B;
+    --ok: #38D996;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background:
+      radial-gradient(1100px 600px at 15% -10%, rgba(0, 180, 216, 0.16), transparent 60%),
+      radial-gradient(900px 500px at 95% 110%, rgba(255, 183, 3, 0.10), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 430px;
+    background: linear-gradient(180deg, var(--panel-soft), var(--panel));
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 34px 30px 28px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* 顶部一道金线，纯装饰，用来和 PPT 主视觉呼应 */
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--gold));
+  }
+
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+
+  .brand-mark {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    background: var(--primary-weak);
+    border: 1px solid rgba(0, 180, 216, 0.35);
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  h1 { font-size: 19px; margin: 0; letter-spacing: 0.5px; }
+
+  .subtitle { color: var(--text-dim); font-size: 13px; margin: 4px 0 26px; }
+
+  label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
+
+  input {
+    width: 100%;
+    padding: 11px 12px;
+    background: rgba(6, 15, 25, 0.6);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-weak);
+  }
+
+  input::placeholder { color: #5C7488; }
+
+  .field { margin-bottom: 16px; }
+
+  .hint { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
+
+  button {
+    width: 100%;
+    margin-top: 6px;
+    padding: 12px;
+    border: none;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--primary), #0093B0);
+    color: #04202B;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.05s;
+  }
+
+  button:hover:not(:disabled) { filter: brightness(1.08); }
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button:disabled { opacity: 0.6; cursor: progress; }
+
+  /* 状态行常驻占位：报错与提示都走这里，避免布局跳动 */
+  .msg {
+    min-height: 22px;
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .msg.error { color: var(--danger); }
+  .msg.ok { color: var(--ok); }
+
+  .foot {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">AI</span>
+    <h1>团队 AI 工作台</h1>
+  </div>
+  <p class="subtitle">用公司下发的 API Key 登录，浏览器即工作台。</p>
+
+  <form id="login-form" novalidate>
+    <div class="field">
+      <label for="api-key">API Key</label>
+      <input id="api-key" name="api-key" type="password" autocomplete="off"
+             spellcheck="false" placeholder="粘贴管理员下发的 Key" required>
+      <p class="hint">Key 只存在本机浏览器，不会上传到任何第三方。</p>
+    </div>
+
+    <div class="field">
+      <label for="api-base">服务地址</label>
+      <input id="api-base" name="api-base" type="text" autocomplete="off"
+             spellcheck="false" placeholder="/v1">
+      <p class="hint">留空即同源 <code>/v1</code>；分开部署时填服务端地址，如 主机:端口/v1。</p>
+    </div>
+
+    <button id="submit-btn" type="submit">进入工作台</button>
+  </form>
+
+  <p id="msg" class="msg" role="status" aria-live="polite"></p>
+
+  <div class="foot">
+    <span>双因子登录：Key + 本机设备标识</span>
+    <span>V1.3</span>
+  </div>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  // localStorage 的键集中在这里，dashboard.html 用同一套键名
+  var K = {
+    apiKey: "tap.apiKey",
+    token: "tap.token",
+    tokenExpires: "tap.tokenExpires",
+    apiBase: "tap.apiBase",
+    device: "tap.deviceId",
+    userId: "tap.userId",
+    terminalId: "tap.terminalId"
+  };
+
+  var form = document.getElementById("login-form");
+  var keyInput = document.getElementById("api-key");
+  var baseInput = document.getElementById("api-base");
+  var btn = document.getElementById("submit-btn");
+  var msg = document.getElementById("msg");
+
+  /**
+   * 服务地址规范化：默认走同源 /v1（页面与 API 同域部署时零配置），
+   * 末尾斜杠去掉，避免拼出 //auth/token 这种双斜杠路径。
+   */
+  function resolveBase(raw) {
+    var value = (raw || "").trim();
+    if (!value) return "/v1";
+    // 允许只填 主机:端口，补上协议头，省得员工记格式
+    if (value.indexOf("//") === -1) value = "//" + value;
+    value = value.replace(/\/+$/, "");
+    if (value.slice(-3) !== "/v1") value += "/v1";
+    return value;
+  }
+
+  /**
+   * 设备指纹：浏览器拿不到硬件信息，用本地生成并持久化的随机 ID 代替。
+   * 这样双因子里的"机器因子"稳定可复用；换浏览器或清缓存即视为新设备，
+   * 且存的是随机串而非可识别个人的明文。
+   */
+  function deviceFingerprint() {
+    var id = localStorage.getItem(K.device);
+    if (!id) {
+      var buf = new Uint8Array(12);
+      crypto.getRandomValues(buf);
+      id = "web-" + Array.prototype.map.call(buf, function (b) {
+        return ("0" + b.toString(16)).slice(-2);
+      }).join("");
+      localStorage.setItem(K.device, id);
+    }
+    return id;
+  }
+
+  function say(text, kind) {
+    msg.textContent = text;
+    msg.className = "msg" + (kind ? " " + kind : "");
+  }
+
+  function isFresh(token, expiresAt) {
+    if (!token) return false;
+    var exp = Date.parse(expiresAt || "");
+    // 留 30 秒余量：避免刚好卡在过期点，进看板就立刻被踢回登录页
+    return isNaN(exp) ? true : exp > Date.now() + 30000;
+  }
+
+  /**
+   * 登录即换 token：Key 有效性当场验证，不把错误延后到看板页再报。
+   * 换不到 token 就不跳转 —— 员工在同一屏就知道是 Key 错还是服务端没起。
+   */
+  function doLogin(event) {
+    event.preventDefault();
+
+    var apiKey = keyInput.value.trim();
+    if (!apiKey) {
+      say("请先填写 API Key。", "error");
+      keyInput.focus();
+      return;
+    }
+
+    var base = resolveBase(baseInput.value);
+    btn.disabled = true;
+    say("正在验证…");
+
+    fetch(base + "/auth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: apiKey,
+        device_fingerprint: deviceFingerprint(),
+        os: navigator.platform || "web"
+      })
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (body) {
+        return { status: res.status, body: body };
+      });
+    }).then(function (r) {
+      if (r.status === 200 && r.body && r.body.token) {
+        localStorage.setItem(K.apiKey, apiKey);
+        localStorage.setItem(K.token, r.body.token);
+        localStorage.setItem(K.tokenExpires, r.body.expires_at || "");
+        localStorage.setItem(K.userId, r.body.user_id || "");
+        localStorage.setItem(K.terminalId, r.body.terminal_id || "");
+        localStorage.setItem(K.apiBase, base);
+        say("验证通过，正在进入工作台…", "ok");
+        // replace 而非 assign：登录页不留在后退栈里，避免回退后看到过期状态
+        location.replace("dashboard.html");
+        return;
+      }
+      if (r.status === 401) {
+        say("API Key 无效，或该设备已绑定其他账号。", "error");
+      } else {
+        say("登录失败（HTTP " + r.status + "）：" + describe(r.body), "error");
+      }
+      btn.disabled = false;
+    }).catch(function (err) {
+      console.error("登录请求失败", err);
+      say("连不上服务端，请检查服务地址与网络。", "error");
+      btn.disabled = false;
+    });
+  }
+
+  function describe(body) {
+    if (!body) return "无响应内容";
+    if (typeof body.detail === "string") return body.detail;
+    if (body.detail && body.detail.message) return body.detail.message;
+    if (body.message) return body.message;
+    return "请稍后重试";
+  }
+
+  form.addEventListener("submit", doLogin);
+
+  // 上次填过的地址带回来，减少重复输入
+  baseInput.value = localStorage.getItem(K.apiBase) || "";
+
+  var params = new URLSearchParams(location.search);
+  if (params.get("expired")) {
+    say("登录已过期，请重新输入 API Key。", "error");
+  } else if (isFresh(localStorage.getItem(K.token), localStorage.getItem(K.tokenExpires))) {
+    say("检测到有效登录，正在进入工作台…", "ok");
+    location.replace("dashboard.html");
+  } else {
+    setTimeout(function () { keyInput.focus(); }, 50);
+  }
+})();
+</script>
+</body>
+</html>
