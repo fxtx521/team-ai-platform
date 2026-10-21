@@ -1,0 +1,59 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  contracts:
+    name: 契约一致性
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 安装依赖
+        run: pip install pyyaml
+      - name: 契约三件套校验
+        run: python tests/contract_parity.py
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - name: Go 契约包编译
+        run: go build ./...
+        working-directory: contracts
+
+  server:
+    name: 服务端冒烟
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 安装依赖
+        run: pip install fastapi uvicorn aiosqlite
+      - name: W1+W2 冒烟
+        run: |
+          bash tests/w1_smoke.sh
+          bash tests/w2_smoke.sh
+
+  executor:
+    name: 执行器双平台构建+测试
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - name: vet + 单测（路径硬边界 100% 覆盖）
+        run: go vet ./... && go test ./...
+        working-directory: executor
+      - name: 双平台交叉编译
+        run: |
+          GOOS=windows GOARCH=amd64 go build -o /tmp/agent.exe .
+          GOOS=darwin GOARCH=arm64 go build -o /tmp/agent-macos .
+          GOOS=linux GOARCH=amd64 go build -o /tmp/agent-linux .
+        working-directory: executor
