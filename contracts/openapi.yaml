@@ -1,0 +1,107 @@
+openapi: "3.1.0"
+info:
+  title: Team AI Platform API
+  version: "1.0.0"
+  description: 企业团队AI资产平台 — 员工端执行器与服务端之间的唯一契约
+servers:
+  - url: https://{company-host}/v1
+    variables:
+      company-host:
+        default: api.company.internal
+paths:
+  /auth/token:
+    post:
+      summary: API Key 换短期 token（双因子：设备指纹+key）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [api_key, device_fingerprint]
+              properties:
+                api_key: { type: string }
+                device_fingerprint: { type: string }
+      responses:
+        "200":
+          description: 返回 token 与过期时间
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  expires_at: { type: string, format: date-time }
+  /heartbeat:
+    post:
+      summary: 终端心跳（版本·在线·队列长度）
+      responses:
+        "200": { description: OK }
+  /tasks:
+    post:
+      summary: 创建任务（服务端派活或员工自建；request_id 幂等）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [request_id, title, type]
+              properties:
+                request_id: { type: string }
+                title: { type: string }
+                type: { type: string, enum: [local, standard, sensitive] }
+                source: { type: string, enum: [web, feishu, cron, executor] }
+      responses:
+        "201": { description: Created }
+  /tasks/{task_id}/steps:
+    post:
+      summary: 批量上报执行步骤（幂等）
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+  /tasks/{task_id}/artifacts:
+    post:
+      summary: 登记产物（sha256+visibility，返回上传地址）
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+  /inbox/dispatch:
+    post:
+      summary: 服务端向终端派活（离线挂队列，上线即拉）
+      responses:
+        "200": { description: OK }
+  /inbox/pull:
+    get:
+      summary: 终端拉取待执行任务
+      responses:
+        "200": { description: OK }
+  /skills:
+    get:
+      summary: 增量拉取技能/模板（since 游标）
+      parameters:
+        - name: since
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200": { description: OK }
+  /model/route:
+    get:
+      summary: 查询本角色可用模型与代理地址（key 永不下发）
+      responses:
+        "200": { description: OK }
+components:
+  securitySchemes:
+    BearerToken:
+      type: http
+      scheme: bearer
+security:
+  - BearerToken: []
