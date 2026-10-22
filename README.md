@@ -1,22 +1,30 @@
 # team-ai-platform
 
-企业团队 AI 资产平台 —— 单一 Go 执行器 + 云端编排的跨平台企业 AI 工作台。
+**English** | [中文](./README_CN.md)
 
-Mac 与 Windows 员工安装**同一个软件**（Go 单代码库，一次构建双平台产物）：
-- 员工端：几十 MB 的本地执行器（文件/命令/浏览器/上报/心跳），双击就跑，零依赖
-- 服务端：FastAPI 控制面 + Agent 编排器（大脑）+ LLM 网关（key 集中管理、按角色授权、记账到人）
-- UI：浏览器打开的公司工作台，一套代码双平台访问
+Enterprise Team AI Asset Platform — a single Go executor plus cloud orchestration for a cross-platform enterprise AI workspace.
 
-## 架构
+Every employee on Mac or Windows installs **the same app**: one Go codebase, one build pipeline, two platform binaries.
 
-见 `docs/` 下设计文档（技术方案 V1.3）。
+- **Endpoint**: a lightweight (~tens of MB) local executor (files / commands / browser / reporting / heartbeat). Double-click to run, zero dependencies.
+- **Server**: FastAPI control plane + agent orchestrator (the brain) + LLM gateway (centralized API keys, role-based access, usage accounted per user).
+- **UI**: a browser-based company workspace — one codebase, accessible from both platforms.
 
-## 目录
+## Architecture
 
-- `server/` 服务端（FastAPI + 编排器 + LLM 网关）
-- `executor/` 员工端执行器（Go，跨平台）
-- `web/` 工作台前端
-- `tests/` 契约测试与集成测试
+See `docs/` for the design documents (technical blueprint V1.3).
+
+## Repository Layout
+
+- `server/` — control plane (FastAPI + orchestrator + LLM gateway)
+- `executor/` — employee endpoint (Go, cross-platform)
+- `web/` — workspace frontend (zero-CDN, works on intranets)
+- `tests/` — contract tests and integration smoke suites
+- `contracts/` — OpenAPI + shared schema (single source of truth)
+
+## Status
+
+Work packages W1–W5: server skeleton, orchestrator with three privacy tiers, Go executor toolset, web workspace, and self-healing reconnect drills are done and green. Dual-machine pilot pending.
 
 ## License
 
