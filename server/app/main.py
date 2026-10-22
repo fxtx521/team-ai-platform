@@ -5,7 +5,10 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator, Callable
 
+from pathlib import Path
+
 from fastapi import FastAPI, Request, Response
+from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
 from . import store
@@ -17,6 +20,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger("tap")
 
 API_PREFIX = "/v1"
+# 工作台静态页（登录页 index.html + 看板 dashboard.html）。
+# 同源托管：页面和 API 同一个端口，浏览器无跨域，登录页"服务地址"留空即用。
+WEB_DIR = Path(__file__).resolve().parent.parent.parent / "web"
 
 
 @asynccontextmanager
@@ -47,3 +53,8 @@ async def audit_all(request: Request, call_next: Callable) -> Response:
 
 for module in (auth_router, heartbeat, tasks, inbox, skills, model_route):
     app.include_router(module.router, prefix=API_PREFIX)
+
+# 工作台挂根路径：/ 进登录页，/dashboard.html 进看板。
+# 挂在路由注册之后、且用 check_dir=False：web/ 缺失时服务端 API 照常起，不连坐。
+if WEB_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=str(WEB_DIR), html=True), name="web")
